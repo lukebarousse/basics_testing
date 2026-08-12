@@ -1,9 +1,16 @@
 # 📊 State of the Data Job Market — an Automated dbt Pipeline
-[![📖 dbt Docs](https://img.shields.io/badge/📖_dbt_docs-live-blue)](https://lukebarousse.github.io/basics_testing)
+[![dbt build & publish](https://github.com/lukebarousse/basics_testing/actions/workflows/dbt_build.yml/badge.svg)](https://github.com/lukebarousse/basics_testing/actions/workflows/dbt_build.yml) [![📖 dbt Docs](https://img.shields.io/badge/📖_dbt_docs-live-blue)](https://lukebarousse.github.io/basics_testing)
 
 A tested, documented dbt + DuckDB pipeline over 692k real job postings —
 rebuilt and republished automatically by GitHub Actions on every push.
 
+## Query it live
+This repo publishes its warehouse on every push (and weekly):
+```sql
+    ATTACH 'https://github.com/lukebarousse/basics_testing/releases/download/warehouse/prod.duckdb'
+      AS jobs (READ_ONLY);
+    SELECT * FROM jobs.main.top_companies;
+```
 <- the badge is the front door: one click from the README into the full docs site
    (2.13 adds the Actions "passing" badge right next to it)
 
