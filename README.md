@@ -27,7 +27,7 @@ Most “dbt portfolio” repos stop at `dbt run` on a laptop. This one is meant 
 
 ## 1. The dbt pipeline
 
-![dbt pipeline diagram](img/dbt_pipeline.png)
+![dbt dag diagram](img/dag_pipeline.png)
 
 **dbt practices used**
 
