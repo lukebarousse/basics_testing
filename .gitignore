@@ -8,3 +8,8 @@ wheels/
 
 # Virtual environments
 .venv
+
+# data is re-downloadable, not code
+data/
+*.duckdb
+logs/
