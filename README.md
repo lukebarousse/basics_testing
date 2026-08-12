@@ -1,54 +1,134 @@
-# 📊 State of the Data Job Market — an Automated dbt Pipeline
-[![dbt build & publish](https://github.com/lukebarousse/basics_testing/actions/workflows/dbt_build.yml/badge.svg)](https://github.com/lukebarousse/basics_testing/actions/workflows/dbt_build.yml) [![📖 dbt Docs](https://img.shields.io/badge/📖_dbt_docs-live-blue)](https://lukebarousse.github.io/basics_testing)
+# Automated dbt Pipeline for Job Postings
 
-A tested, documented dbt + DuckDB pipeline over 692k real job postings —
-rebuilt and republished automatically by GitHub Actions on every push.
+[![dbt build & publish](https://github.com/lukebarousse/basics_testing/actions/workflows/dbt_build.yml/badge.svg)](https://github.com/lukebarousse/basics_testing/actions/workflows/dbt_build.yml)
+[![dbt Docs](https://img.shields.io/badge/dbt_docs-live-blue)](https://lukebarousse.github.io/basics_testing)
 
-## Query it live
-This repo publishes its warehouse on every push (and weekly):
-```sql
-    ATTACH 'https://github.com/lukebarousse/basics_testing/releases/download/warehouse/prod.duckdb'
-      AS jobs (READ_ONLY);
-    SELECT * FROM jobs.main.top_companies;
-```
-<- the badge is the front door: one click from the README into the full docs site
-   (2.13 adds the Actions "passing" badge right next to it)
+![dbt pipeline diagram](img/dbt_pipeline.png)
 
-(dbt docs DAG screenshot — sources → diamond → your marts)
+A public dbt + DuckDB pipeline over ~692k real job postings. Every push rebuilds the models, runs tests, and publishes artifacts anyone can open — no private warehouse, no credentials.
 
-## 🧾 Executive Summary (For Hiring Managers)
-- ✅ **dbt pipeline:** 8 models from declared sources to insight marts — zero hardcoded paths
-- ✅ **Dependency graph:** models chained with ref()/source(); dbt orders + parallelizes the build
-- ✅ **Data tests:** every mart's grain covered by unique/not_null — dbt build fails on bad data
-- ✅ **Documentation:** every model + column described in YAML, rendered by dbt docs
-- ✅ **Automation:** GitHub Actions rebuilds, tests, and PUBLISHES the warehouse on push + weekly
-
-If you only have a minute, review these:
-1. [models/monthly_summary.sql](...) — the two-branch join (ref() dependencies)
-2. [models/schema.yml](...) — tests + docs for every model
-3. [.github/workflows/dbt_build.yml](...) — the pipeline that runs itself
-
-## 📈 Headline Findings
-- Meta posted 32,855 jobs — 2x the #2 employer             <- THEIR numbers,
-- Remote is under 7% for every data role                   <- from THEIR models
-- Only 21.3% of postings show pay — and it's text ("100K-186K a year")
-
-## 🛠️ dbt Skills in This Repo
-| Skill | Where to look |
+| What this demonstrates | Where to look |
 | --- | --- |
-| Sources (no hardcoded paths) | models/sources.yml — external_location per table |
-| Model dependencies | ref() in every downstream model; source() at the roots |
-| Materializations | dbt_project.yml default + per-model config() overrides |
-| Data tests | schema.yml — grain tests on every mart |
-| Documentation | descriptions throughout; dbt docs generate renders the site |
-| Environments | dev (local scratch) vs prod (the published warehouse) targets |
+| **dbt pipeline** — sources → cleaned model → insight marts | [`job_postings/models/`](job_postings/models/) |
+| **Hosted dbt docs** — lineage, descriptions, column tests | [Live docs site](https://lukebarousse.github.io/basics_testing) |
+| **Public CI** — build + test + publish on every push | [Actions workflow](https://github.com/lukebarousse/basics_testing/actions/workflows/dbt_build.yml) |
 
-## 🤖 The Pipeline Runs Itself
-On every push (and each Monday), GitHub Actions: downloads the raw data →
-rebuilds all models → runs every test → publishes the warehouse.
-(2.13 adds: status badge + the "Query it live" ATTACH block)
+---
 
-## 🚀 How to Run
+## Why this repo exists
+
+Most “dbt portfolio” repos stop at `dbt run` on a laptop. This one is meant to show the full loop a hiring team actually cares about:
+
+1. **Build a real pipeline** with `source()` / `ref()`, materializations, and grain tests
+2. **Ship documentation** so the DAG and column meaning are reviewable without cloning
+3. **Automate it in CI** so the green badge and published warehouse prove it still works
+
+---
+
+## 1. The dbt pipeline
+
+![dbt pipeline diagram](img/dbt_pipeline.png)
+
+**dbt practices used**
+
+| Practice | Implementation |
+| --- | --- |
+| Declared sources (no hardcoded paths in SQL) | [`sources.yml`](job_postings/models/sources.yml) + `source('raw', 'job_postings')` |
+| Model dependencies | `ref()` everywhere downstream; dbt resolves order and parallelism |
+| Materializations | project default `table`; staging override to `view` |
+| Data tests | `unique` / `not_null` on mart grains in [`schema.yml`](job_postings/models/schema.yml) |
+| Environments | local `dev` vs CI `prod` targets ([`ci/profiles.yml`](ci/profiles.yml)) |
+
+`dbt build` compiles SQL, materializes models, and fails the run if any test fails — same command locally and in CI.
+
+---
+
+## 2. Hosted dbt docs
+
+Docs are generated with `dbt docs generate` and published to GitHub Pages:
+
+**→ [lukebarousse.github.io/basics_testing](https://lukebarousse.github.io/basics_testing)**
+
+A reviewer can open the site and see:
+
+- The full **lineage graph** (sources → models → marts)
+- **Model and column descriptions** from YAML
+- Which columns have **tests** without reading SQL
+
+That is the difference between “I ran dbt once” and “I can hand someone the catalog.”
+
+---
+
+## 3. Public CI anyone can inspect
+
+Workflow: [`.github/workflows/dbt_build.yml`](.github/workflows/dbt_build.yml)
+
+| Trigger | What happens |
+| --- | --- |
+| Push to `main` | Full rebuild |
+| Weekly (Monday) | Scheduled rebuild — pipeline stays fresh |
+| Manual (`workflow_dispatch`) | Run button in the Actions UI |
+
+On each run, Actions:
+
+1. Installs deps with `uv`
+2. Downloads raw parquet
+3. Runs `dbt build --target prod`
+4. Publishes `prod.duckdb` as a GitHub Release asset
+
+Badge at the top of this README links straight to the latest runs — green means the pipeline and tests passed in public.
+
+### Query the published warehouse
+
+No clone required. From a local DuckDB session:
+
+```sql
+ATTACH 'https://github.com/lukebarousse/basics_testing/releases/download/warehouse/prod.duckdb'
+  AS jobs (READ_ONLY);
+
+SELECT * FROM jobs.main.top_companies;
+SELECT * FROM jobs.main.monthly_summary;
+```
+
+---
+
+## Headline findings (from the marts)
+
+- Meta leads employer volume by a wide margin among active posters
+- Remote remains a small share of data-role postings in this sample
+- Salary is sparse and often free-text when present — a real data-quality signal, not just a chart
+
+(Open the marts or the [docs site](https://lukebarousse.github.io/basics_testing) for the exact numbers after the latest CI build.)
+
+---
+
+## Run it yourself
+
+```bash
 uv sync
-python scripts/download_data.py
-dbt build
+uv run python scripts/download_data.py
+cd job_postings && uv run dbt build
+```
+
+Optional docs locally:
+
+```bash
+uv run dbt docs generate
+uv run dbt docs serve
+```
+
+---
+
+## Project layout
+
+```text
+.
+├── .github/workflows/dbt_build.yml   # public CI: build, test, publish
+├── ci/profiles.yml                   # prod DuckDB target for Actions
+├── data/                             # raw + warehouses (gitignored; CI regenerates)
+├── docs/                             # dbt docs site (GitHub Pages)
+├── job_postings/
+│   ├── dbt_project.yml
+│   └── models/                       # sources, staging, marts, schema.yml
+└── scripts/download_data.py          # fetch raw parquet before build
+```
