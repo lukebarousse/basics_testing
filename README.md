@@ -1,5 +1,5 @@
 # 📊 State of the Data Job Market — an Automated dbt Pipeline
-[![📖 dbt Docs](https://img.shields.io/badge/📖_dbt_docs-live-blue)](https://YOU.github.io/REPO/)
+[![📖 dbt Docs](https://img.shields.io/badge/📖_dbt_docs-live-blue)](https://lukebarousse.github.io/basic_testing/)
 
 A tested, documented dbt + DuckDB pipeline over 692k real job postings —
 rebuilt and republished automatically by GitHub Actions on every push.
